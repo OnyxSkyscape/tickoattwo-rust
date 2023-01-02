@@ -1,7 +1,6 @@
 use std::io::Error as IoError;
 
-use crate::network::network_main;
-mod network;
+use tickoattwo_rust::network::network_main;
 
 #[tokio::main]
 async fn main() -> Result<(), IoError> {

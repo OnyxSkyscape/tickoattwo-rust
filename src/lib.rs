@@ -1,3 +1,4 @@
-mod backend;
-mod game;
-mod network;
+pub mod backend;
+pub mod game;
+pub mod network;
+pub mod user;
