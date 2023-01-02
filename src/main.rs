@@ -1,7 +1,13 @@
-#[allow(unused)]
+use std::{
+    io::Error as IoError,
+};
 
-mod backend;
+use network::network_main;
 
-fn main() {
-    println!("Hello, world!");
+mod network;
+
+#[tokio::main]
+async fn main() -> Result<(), IoError> {
+    network_main().await?;
+    Ok(())
 }
