@@ -1,11 +1,11 @@
-#[derive(Copy, Clone, PartialEq)]
-enum Player {
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum Player {
     Horizontal,
     Vertical,
 }
 
-#[derive(Copy, Clone, PartialEq)]
-enum FieldState {
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum FieldState {
     None,
     OccupiedByOne(Player),
     Both,
@@ -13,10 +13,11 @@ enum FieldState {
 
 type Board = [[FieldState; 3]; 3];
 
-struct Game {
+#[derive(Debug)]
+pub struct Game {
     board: Board,
     current_player: Player,
-    previous_move: (usize, usize),
+    previous_move: Option<(u8, u8)>,
 }
 
 impl Game {
@@ -24,22 +25,24 @@ impl Game {
         Game {
             board: [[FieldState::None; 3]; 3],
             current_player: Player::Horizontal,
-            previous_move: (3, 3),
+            previous_move: None,
         }
     }
 
-    fn make_move(&mut self, coords: (u8, u8)) -> Result<(), &str> {
+    pub fn make_move(&mut self, coords: (u8, u8)) -> Result<(), &str> {
         // Out of bound check
-        if coords.0 >= 3 || coords.0 < 0 || coords.1 >= 3 || coords.1 < 0 {
+        if coords.0 >= 3 || coords.1 >= 3 {
             return Err("Invalid coordinates");
         }
 
         // Check if field was occupied the in last round
-        if coords == self.previous_move {
+        if self.previous_move.is_some() && coords == self.previous_move.unwrap() {
             return Err("Invalid move: placed in last round");
         }
 
-        let field = &mut self.board[coords.0][coords.1];
+        self.previous_move = Some(coords);
+
+        let field = &mut self.board[coords.0 as usize][coords.1 as usize];
 
         // Try to occupy field
         *field = match field {
@@ -62,11 +65,11 @@ impl Game {
         Ok(())
     }
 
-    fn check_win(&self) -> Option<Player> {
+    pub fn check_win(&self) -> Option<Player> {
         // Check rows
         for row in self.board.iter() {
             if row.iter().all(|&x| x == FieldState::Both) {
-                return self.current_player;
+                return Some(self.current_player);
             }
         }
 
@@ -76,7 +79,7 @@ impl Game {
                 && self.board[1][col] == FieldState::Both
                 && self.board[2][col] == FieldState::Both
             {
-                return self.current_player;
+                return Some(self.current_player);
             }
         }
 
@@ -88,7 +91,7 @@ impl Game {
                 && self.board[1][1] == FieldState::Both
                 && self.board[2][0] == FieldState::Both
         {
-            return self.current_player;
+            return Some(self.current_player);
         }
 
         // No winning combination found
@@ -105,7 +108,7 @@ mod tests {
         let mut game = Game::new();
 
         // Test no winner
-        assert_eq!(game.check_win(), false);
+        assert_eq!(game.check_win(), None);
 
         // Test horizontal win
         game.board = [
@@ -113,7 +116,8 @@ mod tests {
             [FieldState::None, FieldState::None, FieldState::None],
             [FieldState::None, FieldState::None, FieldState::None],
         ];
-        assert_eq!(game.check_win(), true);
+        game.current_player = Player::Horizontal;
+        assert_eq!(game.check_win(), Some(Player::Horizontal));
 
         // Test vertical win
         game.board = [
@@ -121,7 +125,8 @@ mod tests {
             [FieldState::Both, FieldState::Both, FieldState::Both],
             [FieldState::Both, FieldState::Both, FieldState::Both],
         ];
-        assert_eq!(game.check_win(), true);
+        game.current_player = Player::Vertical;
+        assert_eq!(game.check_win(), Some(Player::Vertical));
 
         // Test diagonal win
         game.board = [
@@ -129,86 +134,156 @@ mod tests {
             [FieldState::None, FieldState::Both, FieldState::None],
             [FieldState::None, FieldState::None, FieldState::Both],
         ];
-        assert_eq!(game.check_win(), true);
+        game.current_player = Player::Horizontal;
+        assert_eq!(game.check_win(), Some(Player::Horizontal));
     }
 
+    // Test invalid coordinates
     #[test]
-    fn test_make_move() {
+    fn test_make_move_bounds() {
         let mut game = Game::new();
-        let player_horizontal = Player::Horizontal;
-        let player_vertical = Player::Vertical;
 
-        // Test invalid coordinates
-        assert_eq!(
-            game.make_move(player_horizontal, (3, 0)),
-            Err("Invalid coordinates")
-        );
-        assert_eq!(
-            game.make_move(player_horizontal, (0, 3)),
-            Err("Invalid coordinates")
-        );
-        assert_eq!(
-            game.make_move(player_horizontal, (0, 4)),
-            Err("Invalid coordinates")
-        );
-        assert_eq!(
-            game.make_move(player_horizontal, (4, 0)),
-            Err("Invalid coordinates")
-        );
-        assert_eq!(
-            game.make_move(player_horizontal, (3, 3)),
-            Err("Invalid coordinates")
-        );
-        assert_eq!(
-            game.make_move(player_horizontal, (4, 4)),
-            Err("Invalid coordinates")
-        );
-        assert_eq!(
-            game.make_move(player_horizontal, (5, 5)),
-            Err("Invalid coordinates")
-        );
-        assert_eq!(
-            game.make_move(player_horizontal, (100, 100)),
-            Err("Invalid coordinates")
-        );
+        assert_eq!(game.make_move((3, 0)), Err("Invalid coordinates"));
+    }
 
-        // Test invalid move: placed in last round
-        game.previous_move = Some((0, 0));
+    // Test invalid move: placed in last round
+    #[test]
+    fn test_make_move_last_round() {
+        let mut game = Game::new();
+
+        game.previous_move = Some((0u8, 0u8));
         assert_eq!(
-            game.make_move(player_horizontal, (0, 0)),
+            game.make_move((0, 0)),
             Err("Invalid move: placed in last round")
+        );
+    }
+
+    // Test invalid move: already placed
+    #[test]
+    fn test_make_move_already_placed() {
+        let mut game = Game::new();
+
+        // Test valid move
+        assert_eq!(game.make_move((0, 1)), Ok(()));
+        assert_eq!(
+            game.board[0][1],
+            FieldState::OccupiedByOne(Player::Horizontal)
         );
 
         // Test valid move
-        assert_eq!(game.make_move(player_horizontal, (0, 1)), Ok(()));
+        assert_eq!(game.make_move((1, 1)), Ok(()));
         assert_eq!(
-            game.board[0][1],
-            FieldState::OccupiedByOne(player_horizontal)
+            game.board[1][1],
+            FieldState::OccupiedByOne(Player::Vertical)
         );
 
         // Test invalid move: already placed
-        assert_eq!(
-            game.make_move(player_horizontal, (0, 1)),
-            Err("Invalid move: already placed")
-        );
-        assert_eq!(
-            game.make_move(player_vertical, (0, 1)),
-            Err("Invalid move: already placed")
-        );
+        assert_eq!(game.make_move((0, 1)), Err("Invalid move: already placed"));
+    }
+
+    // Test valid move
+    #[test]
+    fn test_make_move_valid() {
+        let mut game = Game::new();
+
+        // Test valid move
+        assert_eq!(game.make_move((0, 1)), Ok(()));
         assert_eq!(
             game.board[0][1],
-            FieldState::OccupiedByOne(player_horizontal)
+            FieldState::OccupiedByOne(Player::Horizontal)
         );
 
-        // Test valid move: occupied by other player
-        assert_eq!(game.make_move(player_vertical, (1, 1)), Ok(()));
-        assert_eq!(game.board[1][1], FieldState::OccupiedByOne(player_vertical));
-
-        // Test invalid move: both players have placed
+        // Test valid move
+        assert_eq!(game.make_move((1, 1)), Ok(()));
         assert_eq!(
-            game.make_move(player_horizontal, (1, 1)),
-            Err("Invalid move")
+            game.board[1][1],
+            FieldState::OccupiedByOne(Player::Vertical)
         );
-        assert_eq!(game.board[1][1], FieldState::OccupiedByOne(player_vertical));
+
+        // Test valid move
+        assert_eq!(game.make_move((1, 2)), Ok(()));
+        assert_eq!(
+            game.board[1][2],
+            FieldState::OccupiedByOne(Player::Horizontal)
+        );
+
+        // Test valid move
+        assert_eq!(game.make_move((2, 2)), Ok(()));
+        assert_eq!(
+            game.board[2][2],
+            FieldState::OccupiedByOne(Player::Vertical)
+        );
+    }
+
+    // Test valid move
+    #[test]
+    fn test_make_move_valid_both() {
+        let mut game = Game::new();
+
+        // Test valid move
+        assert_eq!(game.make_move((0, 1)), Ok(()));
+        assert_eq!(
+            game.board[0][1],
+            FieldState::OccupiedByOne(Player::Horizontal)
+        );
+
+        // Test valid move
+        assert_eq!(game.make_move((1, 1)), Ok(()));
+        assert_eq!(
+            game.board[1][1],
+            FieldState::OccupiedByOne(Player::Vertical)
+        );
+
+        // Test valid move
+        assert_eq!(game.make_move((1, 2)), Ok(()));
+        assert_eq!(
+            game.board[1][2],
+            FieldState::OccupiedByOne(Player::Horizontal)
+        );
+
+        // Test valid move both
+        assert_eq!(game.make_move((0, 1)), Ok(()));
+        assert_eq!(game.board[0][1], FieldState::Both);
+    }
+
+    // Test invalid move
+    #[test]
+    fn test_make_move_invalid_both() {
+        let mut game = Game::new();
+
+        // Test valid move
+        assert_eq!(game.make_move((0, 1)), Ok(()));
+        assert_eq!(
+            game.board[0][1],
+            FieldState::OccupiedByOne(Player::Horizontal)
+        );
+
+        // Test valid move
+        assert_eq!(game.make_move((1, 1)), Ok(()));
+        assert_eq!(
+            game.board[1][1],
+            FieldState::OccupiedByOne(Player::Vertical)
+        );
+
+        // Test valid move
+        assert_eq!(game.make_move((1, 2)), Ok(()));
+        assert_eq!(
+            game.board[1][2],
+            FieldState::OccupiedByOne(Player::Horizontal)
+        );
+
+        // Test valid move both
+        assert_eq!(game.make_move((0, 1)), Ok(()));
+        assert_eq!(game.board[0][1], FieldState::Both);
+
+        // Test valid move
+        assert_eq!(game.make_move((2, 1)), Ok(()));
+        assert_eq!(
+            game.board[2][1],
+            FieldState::OccupiedByOne(Player::Horizontal)
+        );
+
+        // Test invalid move both
+        assert_eq!(game.make_move((0, 1)), Err("Invalid move"));
     }
 }

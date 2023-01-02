@@ -1,9 +1,6 @@
-use std::{
-    io::Error as IoError,
-};
+use std::io::Error as IoError;
 
-use network::network_main;
-
+use crate::network::network_main;
 mod network;
 
 #[tokio::main]
