@@ -1,8 +1,9 @@
 use uuid::Uuid;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct User {
     pub game: Option<Uuid>,
+    pub username: String,
 }
 
 impl User {
