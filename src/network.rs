@@ -4,16 +4,28 @@ use futures_util::{future, pin_mut, stream::TryStreamExt, StreamExt};
 use tokio::net::{TcpListener, TcpStream};
 use tungstenite::protocol::Message;
 
+use crate::backend::Backend;
+use crate::user::User;
+
 type Tx = UnboundedSender<Message>;
 type PeerMap = Arc<Mutex<HashMap<SocketAddr, Tx>>>;
 
-pub async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: SocketAddr) {
+pub async fn handle_connection(
+    peer_map: PeerMap,
+    backend: Arc<Mutex<Backend>>,
+    raw_stream: TcpStream,
+    addr: SocketAddr,
+) {
     println!("Incoming TCP connection from: {}", addr);
 
     let ws_stream = tokio_tungstenite::accept_async(raw_stream)
         .await
         .expect("Error during the websocket handshake occurred");
     println!("WebSocket connection established: {}", addr);
+
+    let user = Arc::new(Mutex::new(User::new()));
+
+    backend.lock().unwrap().user_join(user.clone());
 
     // Insert the write part of this peer to the peer map.
     let (tx, rx) = unbounded();
@@ -49,6 +61,8 @@ pub async fn handle_connection(peer_map: PeerMap, raw_stream: TcpStream, addr: S
 
     println!("{} disconnected", &addr);
     peer_map.lock().unwrap().remove(&addr);
+
+    backend.lock().unwrap().user_leave(*user.lock().unwrap());
 }
 
 use std::{
@@ -59,12 +73,13 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-pub async fn network_main() -> Result<(), IoError> {
+pub async fn serve(backend: Backend) -> Result<(), IoError> {
     let addr = env::args()
         .nth(1)
         .unwrap_or_else(|| "127.0.0.1:12080".to_string());
 
     let state = PeerMap::new(Mutex::new(HashMap::new()));
+    let arc_backend = Arc::new(Mutex::new(backend));
 
     // Create the event loop and TCP listener we'll accept connections on.
     let try_socket = TcpListener::bind(&addr).await;
@@ -73,7 +88,12 @@ pub async fn network_main() -> Result<(), IoError> {
 
     // Let's spawn the handling of each connection in a separate task.
     while let Ok((stream, addr)) = listener.accept().await {
-        tokio::spawn(handle_connection(state.clone(), stream, addr));
+        tokio::spawn(handle_connection(
+            state.clone(),
+            arc_backend.clone(),
+            stream,
+            addr,
+        ));
     }
 
     Ok(())

@@ -1,9 +1,11 @@
 use std::io::Error as IoError;
 
-use tickoattwo_rust::network::network_main;
+use tickoattwo_rust::network::serve;
+use tickoattwo_rust::backend::Backend;
 
 #[tokio::main]
 async fn main() -> Result<(), IoError> {
-    network_main().await?;
+    let backend = Backend::new();
+    serve(backend).await?;
     Ok(())
 }

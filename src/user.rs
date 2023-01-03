@@ -1,6 +1,12 @@
 use uuid::Uuid;
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct User {
-    pub game: Uuid,
+    pub game: Option<Uuid>,
+}
+
+impl User {
+    pub fn new() -> Self {
+        Self { game: None }
+    }
 }
