@@ -40,3 +40,18 @@ svg.spinner {
     stroke-dashoffset: (0.66 * $spinnerSize);
   }
 }
+
+.pf-m-toast {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+
+  .pf-c-alert {
+    padding: 1em 2em;
+    border-radius: 12px;
+  }
+
+  .pf-c-alert.pf-m-danger {
+    background-color: #e14444;
+  }
+}

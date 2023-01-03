@@ -1,4 +1,7 @@
+use std::{sync::Arc, time::Duration};
+
 use futures::SinkExt;
+use patternfly_yew::{use_toaster, Toast, ToastViewer, Type};
 use tickoattwo::packet::{Event, Packet};
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::spawn_local;
@@ -19,7 +22,12 @@ async fn websocket(username: String) -> Result<(), WsErr> {
     io.send(WsMessage::Text(
         Packet::new(Event::Nickname(username)).encode_raw(),
     ))
-    .await;
+    .await?;
+
+    let ev = ws.close().await?;
+    if !ev.was_clean {
+        return Err(WsErr::ConnectionFailed { event: ev });
+    }
 
     Ok(())
 }
@@ -30,6 +38,8 @@ fn App() -> Html {
     let input_ref = use_node_ref();
     let input_value_handle = use_state(String::default);
     let input_value = (*input_value_handle).clone();
+
+    let toaster = Arc::new(use_toaster().expect("Must be nested under a ToastViewer component"));
 
     let onchange = {
         let input_ref = input_ref.clone();
@@ -46,13 +56,22 @@ fn App() -> Html {
     let onclick = {
         let state = state.clone();
         let value = input_value.clone();
+        let toaster = toaster.clone();
         move |_| {
             state.set(GameState::Queued);
 
             let value = value.clone();
+            let toaster = toaster.clone();
 
             spawn_local(async move {
                 if let Err(err) = websocket(value).await {
+                    toaster.toast(Toast {
+                        timeout: Some(Duration::from_secs(3)),
+                        title: err.to_string(),
+                        actions: Vec::new(),
+                        body: Default::default(),
+                        r#type: Type::Danger,
+                    });
                     web_sys::console::error_1(&JsValue::from_str(&err.to_string()));
                 }
             });
@@ -140,6 +159,17 @@ fn App() -> Html {
     }
 }
 
+#[function_component]
+fn Frame() -> Html {
+    html! {
+        <>
+            <ToastViewer>
+                <App />
+            </ToastViewer>
+        </>
+    }
+}
+
 fn main() {
-    yew::Renderer::<App>::new().render();
+    yew::Renderer::<Frame>::new().render();
 }
