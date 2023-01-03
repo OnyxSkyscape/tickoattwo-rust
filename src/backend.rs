@@ -66,6 +66,10 @@ impl Backend {
                     if let Some(other_player) = &other_player {
                         users.remove(other_player);
                     }
+
+                    if Some(user_id) == self.queue.as_ref() {
+                        self.queue = None
+                    }
                 }
             }
         }
