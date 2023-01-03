@@ -8,6 +8,9 @@ pub struct User {
 
 impl User {
     pub fn new() -> Self {
-        Self { game: None }
+        Self {
+            game: None,
+            username: String::from(""),
+        }
     }
 }

@@ -1,3 +1,4 @@
+use futures::{future, TryStreamExt, pin_mut};
 use futures_channel::mpsc::unbounded;
 use futures_util::StreamExt;
 
@@ -5,7 +6,6 @@ use tokio::net::{TcpListener, TcpStream};
 use tungstenite::protocol::Message;
 
 use crate::backend::Backend;
-use crate::user::User;
 
 pub async fn handle_connection(
     backend: Arc<Mutex<Backend>>,
@@ -19,16 +19,23 @@ pub async fn handle_connection(
         .expect("Error during the websocket handshake occurred");
     println!("WebSocket connection established: {}", addr);
 
-    let user = Arc::new(Mutex::new(User::new()));
-
-    backend.lock().unwrap().user_join(user.clone());
-
+    backend.lock().unwrap().user_join(&addr);
+    
     let (tx, rx) = unbounded::<Message>();
     let (outgoing, incoming) = ws_stream.split();
 
+    let send = rx.map(Ok).forward(outgoing);
+    let recv = incoming.try_for_each(|message| {
+        tx.unbounded_send(message.clone()).unwrap();
+        future::ok(())
+    });
+
+    pin_mut!(send, recv);
+    future::select(send, recv).await;
+
     println!("{} disconnected", &addr);
 
-    backend.lock().unwrap().user_leave(*user.lock().unwrap());
+    backend.lock().unwrap().user_leave(&addr);
 }
 
 use std::{

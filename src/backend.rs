@@ -1,5 +1,6 @@
 use std::{
     collections::HashMap,
+    net::SocketAddr,
     sync::{Arc, Mutex},
 };
 use uuid::Uuid;
@@ -8,35 +9,48 @@ use crate::game::Game;
 use crate::user::User;
 
 pub struct Backend {
-    waiting: Option<Arc<Mutex<User>>>,
+    queue: Option<SocketAddr>,
+    users: Arc<Mutex<HashMap<SocketAddr, User>>>,
     games: Arc<Mutex<HashMap<Uuid, Game>>>,
 }
 
 impl Backend {
     pub fn new() -> Self {
         Self {
-            waiting: None,
+            queue: None,
+            users: Arc::new(Mutex::new(HashMap::new())),
             games: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
-    pub fn user_join(&mut self, user: Arc<Mutex<User>>) {
-        if let Some(waiting_user) = &self.waiting {
-            let waiting = Arc::clone(waiting_user);
-            self.waiting = None;
-            self.start_game(user, waiting);
+    pub fn user_join(&mut self, new_user_id: &SocketAddr) {
+        let mut users = self.users.lock().unwrap();
+
+        let new_user = User::new();
+        users.insert(new_user_id.clone(), new_user);
+
+        std::mem::drop(users);
+
+        if let Some(queue_user_id) = self.queue {
+            self.queue = None;
+            self.start_game(&queue_user_id, new_user_id);
         } else {
-            self.waiting = Some(user);
+            self.queue = Some(new_user_id.clone());
         }
     }
 
-    pub fn user_leave(&mut self, _user: User) {}
+    pub fn user_leave(&mut self, _user_id: &SocketAddr) {}
 
-    fn start_game(&mut self, player1: Arc<Mutex<User>>, player2: Arc<Mutex<User>>) {
+    fn start_game(&mut self, user_id1: &SocketAddr, user_id2: &SocketAddr) {
         let game = Game::new();
         let game_id = Uuid::new_v4();
         self.games.lock().unwrap().insert(game_id.clone(), game);
-        player1.lock().unwrap().game = Some(game_id.clone());
-        player2.lock().unwrap().game = Some(game_id.clone());
+
+        // Assign users to game
+        let mut users = self.users.lock().unwrap();
+        let user1 = users.get_mut(user_id1).unwrap();
+        user1.game = Some(game_id.clone());
+        let user2 = users.get_mut(user_id2).unwrap();
+        user2.game = Some(game_id.clone());
     }
 }
