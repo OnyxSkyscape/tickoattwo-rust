@@ -78,7 +78,7 @@ async fn accept_connection(backend: Arc<Mutex<Backend>>, peer: SocketAddr, strea
 pub async fn serve(backend: Backend) -> Result<(), IoError> {
     let addr = env::args()
         .nth(1)
-        .unwrap_or_else(|| "127.0.0.1:12080".to_string());
+        .unwrap_or_else(|| "127.0.0.1:8080".to_string());
 
     let backend = Arc::new(Mutex::new(backend));
 
