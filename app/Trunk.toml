@@ -1,0 +1,7 @@
+[build]
+target = "index.html"
+dist = "dist"
+
+[[proxy]]
+backend = "ws://127.0.0.1:9000/api/ws"
+ws = true

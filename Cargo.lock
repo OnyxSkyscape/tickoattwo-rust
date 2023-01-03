@@ -952,7 +952,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "tickoattwo-rust"
+name = "tickoattwo-client"
+version = "0.1.0"
+dependencies = [
+ "ws_stream_wasm",
+ "yew",
+]
+
+[[package]]
+name = "tickoattwo-server"
 version = "0.1.0"
 dependencies = [
  "base64 0.20.0",
@@ -966,8 +974,6 @@ dependencies = [
  "tokio-tungstenite",
  "tungstenite",
  "uuid",
- "ws_stream_wasm",
- "yew",
 ]
 
 [[package]]

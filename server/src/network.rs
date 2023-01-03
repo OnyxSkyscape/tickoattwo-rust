@@ -101,7 +101,7 @@ async fn handle_request(
         || key.is_none()
         || req.uri() != "/api/ws"
     {
-        return Ok(Response::new(Body::from("Hello World!")));
+        return Ok(Response::new(Body::empty()));
     }
 
     let ver = req.version();

@@ -1,25 +1,2 @@
-[package]
-edition = "2021"
-name = "tickoattwo-rust"
-version = "0.1.0"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-hyper = { version = "0.14.23", default-features = false, features = [
-  "http1",
-  "server",
-  "tcp",
-] }
-uuid = { version = "1.2.2", features = ["v4", "fast-rng"] }
-base64 = "0.20.0"
-ws_stream_wasm = "0.7.3"
-yew = "0.20.0"
-futures = "0.3.25"
-futures-channel = "0.3.25"
-futures-util = "0.3.25"
-tokio = { version = "1.23.0", features = ["rt-multi-thread", "macros"] }
-tokio-tungstenite = "0.18.0"
-tungstenite = "0.18.0"
-log = "0.4.0"
-simple_logger = "4.0.0"
+[workspace]
+members = ["app", "server"]
