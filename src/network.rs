@@ -9,6 +9,7 @@ use hyper::{
     upgrade::Upgraded,
     Body, Method, Request, Response, Server, StatusCode, Version,
 };
+use log::{info, warn};
 use tokio_tungstenite::WebSocketStream;
 use tungstenite::{handshake::derive_accept_key, protocol::Role, Error, Result};
 
@@ -25,7 +26,7 @@ async fn handle_connection(
     ws_stream: WebSocketStream<Upgraded>,
     addr: SocketAddr,
 ) -> Result<()> {
-    println!("WS: Connected: {}", addr);
+    info!("WS: Connected: {}", addr);
 
     let (mut tx, mut rx) = ws_stream.split();
 
@@ -48,7 +49,7 @@ async fn handle_connection(
                                     }
                                 },
                                 Err(err) => {
-                                    println!("error: {}", err)
+                                    warn!("Decode error: {}", err)
                                 }
                             }
                         } else if msg.is_close() {
@@ -61,7 +62,7 @@ async fn handle_connection(
         }
     }
 
-    println!("WS: Disconnected: {}", &addr);
+    info!("WS: Disconnected: {}", &addr);
 
     backend.lock().unwrap().user_leave(&addr);
 
@@ -73,7 +74,7 @@ async fn handle_request(
     mut req: Request<Body>,
     addr: SocketAddr,
 ) -> Result<Response<Body>, Infallible> {
-    println!("HTTP: {}: {}", req.method().as_str(), req.uri().path());
+    info!("HTTP: {}: {}", req.method().as_str(), req.uri().path());
 
     let headers = req.headers();
     let key = headers.get(SEC_WEBSOCKET_KEY);
@@ -117,11 +118,11 @@ async fn handle_request(
                 {
                     match e {
                         Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
-                        err => println!("HTTP: Error processing connection: {}", err),
+                        err => warn!("HTTP: Error processing connection: {}", err),
                     }
                 }
             }
-            Err(e) => println!("HTTP: Upgrade error: {}", e),
+            Err(e) => warn!("HTTP: Upgrade error: {}", e),
         }
     });
 
@@ -149,7 +150,7 @@ pub async fn serve(backend: Backend, addr: String) -> Result<(), hyper::Error> {
 
     let server = Server::bind(&addr.parse().unwrap()).serve(make_svc);
 
-    println!("Listening on {}", addr);
+    info!("Listening on {}", addr);
 
     server.await?;
 

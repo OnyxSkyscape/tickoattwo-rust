@@ -1,6 +1,7 @@
 use base64;
 use tungstenite::Message;
 
+#[derive(Debug, Clone, PartialEq)]
 pub enum Event {
     Nickname(String),
 }

@@ -1,3 +1,4 @@
+use log::{debug, info};
 use std::{
     collections::HashMap,
     net::SocketAddr,
@@ -52,12 +53,15 @@ impl Backend {
         let mut games = self.games.lock().unwrap();
 
         if Some(user_id) == self.queue.as_ref() {
-            self.queue = None
+            self.queue = None;
+            debug!("Removed user from queue: {}", user_id);
         }
 
         if let Some(user) = users.remove(user_id) {
+            debug!("Removed user: {}", user_id);
             if let Some(game_id) = &user.game {
                 if let Some(game) = games.remove(game_id) {
+                    debug!("Removed game: {}", game_id);
                     let mut other_player: Option<SocketAddr> = None;
 
                     if &game.1 == user_id {
@@ -70,6 +74,7 @@ impl Backend {
 
                     if let Some(other_player) = &other_player {
                         users.remove(other_player);
+                        debug!("Removed other player: {}", other_player);
                     }
                 }
             }
@@ -84,6 +89,8 @@ impl Backend {
             .unwrap()
             .insert(game_id.clone(), (game, user_id1.clone(), user_id2.clone()));
 
+        info!("Started new game: {} ({}, {})", game_id, user_id1, user_id2);
+
         // Assign users to game
         let mut users = self.users.lock().unwrap();
         let user1 = users.get_mut(user_id1).unwrap();
@@ -93,6 +100,8 @@ impl Backend {
     }
 
     pub fn dispatch_event(&mut self, event: Event, user_id: &SocketAddr) -> Option<Packet> {
+        debug!("Received event: {:?} ({})", event, user_id);
+
         match event {
             Event::Nickname(username) => {
                 let mut users = self.users.lock().unwrap();
