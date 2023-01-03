@@ -5,13 +5,21 @@ use std::{
 };
 use uuid::Uuid;
 
-use crate::game::Game;
 use crate::user::User;
+use crate::{
+    game::Game,
+    packet::{Event, Packet},
+};
 
 pub struct Backend {
+    // Single slot waiting room
     queue: Option<SocketAddr>,
+
+    // User store
     users: Arc<Mutex<HashMap<SocketAddr, User>>>,
-    games: Arc<Mutex<HashMap<Uuid, Game>>>,
+
+    // Game state store
+    games: Arc<Mutex<HashMap<Uuid, (Game, SocketAddr, SocketAddr)>>>,
 }
 
 impl Backend {
@@ -39,12 +47,37 @@ impl Backend {
         }
     }
 
-    pub fn user_leave(&mut self, _user_id: &SocketAddr) {}
+    pub fn user_leave(&mut self, user_id: &SocketAddr) {
+        let mut users = self.users.lock().unwrap();
+        let mut games = self.games.lock().unwrap();
+        if let Some(user) = users.remove(user_id) {
+            if let Some(game_id) = &user.game {
+                if let Some(game) = games.remove(game_id) {
+                    let mut other_player: Option<SocketAddr> = None;
+
+                    if &game.1 == user_id {
+                        other_player = Some(game.2);
+                    }
+
+                    if &game.2 == user_id {
+                        other_player = Some(game.1);
+                    }
+
+                    if let Some(other_player) = &other_player {
+                        users.remove(other_player);
+                    }
+                }
+            }
+        }
+    }
 
     fn start_game(&mut self, user_id1: &SocketAddr, user_id2: &SocketAddr) {
         let game = Game::new();
         let game_id = Uuid::new_v4();
-        self.games.lock().unwrap().insert(game_id.clone(), game);
+        self.games
+            .lock()
+            .unwrap()
+            .insert(game_id.clone(), (game, user_id1.clone(), user_id2.clone()));
 
         // Assign users to game
         let mut users = self.users.lock().unwrap();
@@ -52,5 +85,17 @@ impl Backend {
         user1.game = Some(game_id.clone());
         let user2 = users.get_mut(user_id2).unwrap();
         user2.game = Some(game_id.clone());
+    }
+
+    pub fn dispatch_event(&mut self, event: Event, user_id: &SocketAddr) -> Option<Packet> {
+        match event {
+            Event::Nickname(username) => {
+                let mut users = self.users.lock().unwrap();
+                let user = users.get_mut(user_id).unwrap();
+                user.username = username;
+            }
+        }
+
+        None
     }
 }

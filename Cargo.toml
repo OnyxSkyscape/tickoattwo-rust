@@ -9,12 +9,10 @@ version = "0.1.0"
 futures = "0.3.25"
 futures-channel = "0.3.25"
 futures-util = "0.3.25"
-tokio = {version = "1.23.0", features = ["rt-multi-thread", "macros"]}
+tokio = { version = "1.23.0", features = ["rt-multi-thread", "macros"] }
 tokio-tungstenite = "0.18.0"
 tungstenite = "0.18.0"
-uuid = {version = "1.2.2", features = [
-  "v4",
-  "fast-rng",
-]}
+uuid = { version = "1.2.2", features = ["v4", "fast-rng"] }
+base64 = "0.20.0"
 ws_stream_wasm = "0.7.3"
 yew = "0.20.0"
