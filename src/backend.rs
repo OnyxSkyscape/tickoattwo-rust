@@ -50,6 +50,11 @@ impl Backend {
     pub fn user_leave(&mut self, user_id: &SocketAddr) {
         let mut users = self.users.lock().unwrap();
         let mut games = self.games.lock().unwrap();
+
+        if Some(user_id) == self.queue.as_ref() {
+            self.queue = None
+        }
+
         if let Some(user) = users.remove(user_id) {
             if let Some(game_id) = &user.game {
                 if let Some(game) = games.remove(game_id) {
@@ -65,10 +70,6 @@ impl Backend {
 
                     if let Some(other_player) = &other_player {
                         users.remove(other_player);
-                    }
-
-                    if Some(user_id) == self.queue.as_ref() {
-                        self.queue = None
                     }
                 }
             }
