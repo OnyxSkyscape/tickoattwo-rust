@@ -59,21 +59,31 @@ fn App() -> Html {
         }
     };
 
+    let mut animate_logo: Option<&str> = None;
+
+    if *state == GameState::Queued {
+        animate_logo = Some("animate-bounce")
+    }
+
     html! {
-        <div class="flex flex-col justify-center items-center p-12 h-screen">
-            <div>
+        <div class="flex flex-col justify-center items-center p-12 h-screen transition-all">
+            <div class={classes!(animate_logo)}>
                 <img src="/icon.svg" height=80 width=80 />
             </div>
-            <div class="mt-4">
-                <span class="text-4xl font-bold">{"TickOatTwo"}</span>
-            </div>
+
             if *state == GameState::Enter {
                 <>
-                    <div class="mt-6">
-                        <input ref={input_ref} {onchange} value={input_value} type="text" placeholder="username" class="text-white bg-black border border-2 px-4 py-1 text-lg rounded-lg" />
+                    <div class="mt-4 mb-6">
+                        <span class="text-4xl font-bold">{"Welcome to TickOatTwo!"}</span>
                     </div>
-                    <div {onclick} class="mt-5 bg-white text-black rounded-lg px-8 py-2 text-lg cursor-pointer select-none">
-                        <span>{"Enter"}</span>
+                    <div class="mt-6 flex flex-col gap-2">
+                        <span class="text-gray-600 font-mono">{"Please enter a nickname"}</span>
+                        <div class="flex gap-4">
+                            <input ref={input_ref} {onchange} value={input_value} type="text" class="text-white font-mono bg-black border border-2 px-4 py-1 text-lg rounded-lg w-[300px]" />
+                            <div {onclick} class="bg-white text-black rounded-lg px-8 py-2 text-lg cursor-pointer select-none">
+                                <span>{"Enter"}</span>
+                            </div>
+                        </div>
                     </div>
                 </>
             }
