@@ -1,7 +1,16 @@
 [build]
 target = "index.html"
 dist = "dist"
+public-url = "/"
 
 [[proxy]]
 backend = "ws://127.0.0.1:9000/api/ws"
 ws = true
+
+[[hooks]]
+stage = "build"
+command = "sh"
+command_arguments = [
+  "-c",
+  "npx tailwindcss-cli build src/tailwind.css -o $TRUNK_STAGING_DIR/tailwind.css",
+]
