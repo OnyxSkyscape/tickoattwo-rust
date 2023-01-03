@@ -25,7 +25,7 @@ async fn handle_connection(
     ws_stream: WebSocketStream<Upgraded>,
     addr: SocketAddr,
 ) -> Result<()> {
-    println!("WebSocket connection established: {}", addr);
+    println!("WS: Connected: {}", addr);
 
     let (mut tx, mut rx) = ws_stream.split();
 
@@ -61,7 +61,7 @@ async fn handle_connection(
         }
     }
 
-    println!("{} disconnected", &addr);
+    println!("WS: Disconnected: {}", &addr);
 
     backend.lock().unwrap().user_leave(&addr);
 
@@ -73,10 +73,8 @@ async fn handle_request(
     mut req: Request<Body>,
     addr: SocketAddr,
 ) -> Result<Response<Body>, Infallible> {
-    println!("{}: {}", req.method().as_str(), req.uri().path());
+    println!("HTTP: {}: {}", req.method().as_str(), req.uri().path());
 
-    let upgrade = HeaderValue::from_static("Upgrade");
-    let websocket = HeaderValue::from_static("websocket");
     let headers = req.headers();
     let key = headers.get(SEC_WEBSOCKET_KEY);
     let derived = key.map(|k| derive_accept_key(k.as_bytes()));
@@ -87,7 +85,7 @@ async fn handle_request(
             .and_then(|h| h.to_str().ok())
             .map(|h| {
                 h.split(|c| c == ' ' || c == ',')
-                    .any(|p| p.eq_ignore_ascii_case(upgrade.to_str().unwrap()))
+                    .any(|p| p.eq_ignore_ascii_case("upgrade"))
             })
             .unwrap_or(false)
         || !headers
@@ -119,19 +117,21 @@ async fn handle_request(
                 {
                     match e {
                         Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
-                        err => println!("Error processing connection: {}", err),
+                        err => println!("HTTP: Error processing connection: {}", err),
                     }
                 }
             }
-            Err(e) => println!("upgrade error: {}", e),
+            Err(e) => println!("HTTP: Upgrade error: {}", e),
         }
     });
 
     let mut res = Response::new(Body::empty());
     *res.status_mut() = StatusCode::SWITCHING_PROTOCOLS;
     *res.version_mut() = ver;
-    res.headers_mut().append(CONNECTION, upgrade);
-    res.headers_mut().append(UPGRADE, websocket);
+    res.headers_mut()
+        .append(CONNECTION, HeaderValue::from_static("Upgrade"));
+    res.headers_mut()
+        .append(UPGRADE, HeaderValue::from_static("websocket"));
     res.headers_mut()
         .append(SEC_WEBSOCKET_ACCEPT, derived.unwrap().parse().unwrap());
     Ok(res)
