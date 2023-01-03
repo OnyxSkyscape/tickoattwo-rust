@@ -19,7 +19,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{backend::Backend, packet::Packet};
+use crate::{backend::Backend};
+use tickoattwo::packet::Packet;
 
 async fn handle_connection(
     backend: Arc<Mutex<Backend>>,

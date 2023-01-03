@@ -12,6 +12,10 @@ pub struct Packet {
 }
 
 impl Packet {
+    pub fn new(event: Event) -> Self {
+        Self { event }
+    }
+
     pub fn decode_message(message: &Message) -> Result<Self, &str> {
         let raw_message = match message.to_text() {
             Ok(msg) => msg,

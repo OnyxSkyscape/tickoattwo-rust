@@ -6,11 +6,9 @@ use std::{
 };
 use uuid::Uuid;
 
+use crate::game::Game;
 use crate::user::User;
-use crate::{
-    game::Game,
-    packet::{Event, Packet},
-};
+use tickoattwo::packet::{Event, Packet};
 
 pub struct Backend {
     // Single slot waiting room

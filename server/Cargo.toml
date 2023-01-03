@@ -12,7 +12,6 @@ hyper = { version = "0.14.23", default-features = false, features = [
   "tcp",
 ] }
 uuid = { version = "1.2.2", features = ["v4", "fast-rng"] }
-base64 = "0.20.0"
 futures = "0.3.25"
 futures-channel = "0.3.25"
 futures-util = "0.3.25"
@@ -21,3 +20,4 @@ tokio-tungstenite = "0.18.0"
 tungstenite = "0.18.0"
 log = "0.4.0"
 simple_logger = "4.0.0"
+tickoattwo = { path = "../protocol" }

@@ -267,8 +267,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c05aeb6a22b8f62540c194aac980f2115af067bfe15a0734d7277a768d396b31"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "wasi",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -952,9 +954,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "tickoattwo"
+version = "0.1.0"
+dependencies = [
+ "base64 0.20.0",
+ "tungstenite",
+]
+
+[[package]]
 name = "tickoattwo-client"
 version = "0.1.0"
 dependencies = [
+ "futures",
+ "getrandom",
+ "tickoattwo",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
  "ws_stream_wasm",
  "yew",
 ]
@@ -963,13 +979,13 @@ dependencies = [
 name = "tickoattwo-server"
 version = "0.1.0"
 dependencies = [
- "base64 0.20.0",
  "futures",
  "futures-channel",
  "futures-util",
  "hyper",
  "log",
  "simple_logger",
+ "tickoattwo",
  "tokio",
  "tokio-tungstenite",
  "tungstenite",
